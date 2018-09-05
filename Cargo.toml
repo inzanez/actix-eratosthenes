@@ -1,0 +1,9 @@
+[package]
+name = "actix-eratosthenes"
+version = "0.1.0"
+authors = ["inzanez"]
+
+[dependencies]
+actix = "0.7"
+futures = "0.1"
+tokio = "0.1.7"
