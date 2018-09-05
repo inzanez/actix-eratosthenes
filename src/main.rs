@@ -18,13 +18,16 @@ impl Message for Prime {
 /// Actor
 struct MyActor {
     count: usize,
-    printed: bool,
     next: Option<Addr<MyActor>>,
 }
 
 /// Declare actor and its context
 impl Actor for MyActor {
     type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        println!("{}", self.count);
+    }
 }
 
 /// Handler for `Prime` message
@@ -33,42 +36,37 @@ impl Handler<Prime> for MyActor {
 
     fn handle(&mut self, msg: Prime, _: &mut Context<Self>) -> Self::Result {
 
-        if self.printed == false {
-            println!("{}", self.count);
-            self.printed = true;
-            return self.count;
-        }
-
         let test = self.next.clone();
 
-        if let Some(addr) = test {
-            if msg.0 % self.count != 0 {
-                addr.do_send(Prime(msg.0));
-            }
-        } else {
-            println!("Starting actor {}", msg.0);
-            let addr = MyActor { count: msg.0, printed: false, next: None }.start();
+        if msg.0 % self.count != 0 {
 
-            // Initial 'handle' trigger
-            addr.do_send(Prime(100));
-            self.next = Some(addr)
+            if let Some(addr) = test {
+                    addr.do_send(Prime(msg.0));
+            } else {
+                println!("Starting actor {}", msg.0);
+                let addr = MyActor { count: msg.0, next: None }.start();
+                self.next = Some(addr)
+            }
         }
 
         self.count
     }
+
+
 }
 
 fn main() {
     // start system, this is required step
     System::run(|| {
         // start new actor
-        let addr = MyActor { count: 2, printed: false, next: None }.start();
+        let addr = MyActor { count: 2, next: None }.start();
 
         let daddr = addr.clone();
 
     thread::spawn(move|| {
-        for i in 2..40 {
+        for i in 2..100000 {
             daddr.do_send(Prime(i));
+            thread::sleep(Duration::from_millis(1));
         }
     });
 
